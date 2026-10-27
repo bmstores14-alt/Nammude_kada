@@ -6,10 +6,9 @@
 'use strict';
 
 const CONFIG = {
-  SUPABASE_URL: 'https://mxwcnkopzlktfgyyhych.supabase.co',
+SUPABASE_URL: 'https://mxwcnkopzlktfgyyhych.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14d2Nua29wemxrdGZneXloeWNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzU3ODgsImV4cCI6MjEwMjExMTc4OH0.jEm_GRhCNcmeVRphRy5XdzCopGhP79CzxrR-9hOQROw',
 };
-
 /* ---------- constants ---------- */
 const IST = 'Asia/Kolkata';
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -17,6 +16,7 @@ const DAY_NAMES = { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thurs
 const STATUSES = ['new', 'confirmed', 'preparing', 'ready', 'out_for_delivery', 'delivered', 'cancelled'];
 const DISTRICTS = ['Thiruvananthapuram', 'Kollam', 'Pathanamthitta', 'Alappuzha', 'Kottayam', 'Idukki', 'Ernakulam', 'Thrissur', 'Palakkad', 'Malappuram', 'Kozhikode', 'Wayanad', 'Kannur', 'Kasaragod'];
 const PER_PAGE = 24;
+const ADMIN_ONLY = !!window.NK_ADMIN_ONLY; // set by admin.html
 const I18N = {"home": {"en": "Home", "ml": "ഹോം"}, "shops": {"en": "Shops", "ml": "കടകൾ"}, "categories": {"en": "Categories", "ml": "വിഭാഗങ്ങൾ"}, "all": {"en": "All", "ml": "എല്ലാം"}, "search": {"en": "Search", "ml": "തിരയുക"}, "search_ph": {"en": "Search products, shops, places…", "ml": "സാധനങ്ങൾ, കടകൾ, സ്ഥലങ്ങൾ തിരയുക…"}, "cart": {"en": "Cart", "ml": "കാർട്ട്"}, "login": {"en": "Log in", "ml": "ലോഗിൻ"}, "logout": {"en": "Log out", "ml": "ലോഗൗട്ട്"}, "register_shop": {"en": "Sell with us", "ml": "നിങ്ങളുടെ കട ചേർക്കുക"}, "my_shop": {"en": "My shop", "ml": "എന്റെ കട"}, "admin": {"en": "Admin", "ml": "അഡ്മിൻ"}, "tagline": {"en": "Buy from shops in your own town", "ml": "നിങ്ങളുടെ നാട്ടിലെ കടകളിൽ നിന്ന് വാങ്ങൂ"}, "hero_title": {"en": "Your town's shops, now online", "ml": "നിങ്ങളുടെ നാട്ടിലെ കടകൾ ഇനി ഓൺലൈനിൽ"}, "hero_sub": {"en": "Find nearby shops, pick your items, and order on WhatsApp or the website. Delivery or pickup — your choice.", "ml": "അടുത്തുള്ള കടകൾ കണ്ടെത്തൂ, സാധനങ്ങൾ തിരഞ്ഞെടുക്കൂ, വാട്സ്ആപ്പിലോ വെബ്സൈറ്റിലോ ഓർഡർ ചെയ്യൂ. ഡെലിവറിയോ പിക്കപ്പോ — നിങ്ങളുടെ ഇഷ്ടം."}, "your_place": {"en": "Your place", "ml": "നിങ്ങളുടെ സ്ഥലം"}, "town_ph": {"en": "Town / place", "ml": "ടൗൺ / സ്ഥലം"}, "pin_ph": {"en": "PIN code", "ml": "പിൻകോഡ്"}, "set_place": {"en": "Show shops here", "ml": "ഇവിടത്തെ കടകൾ കാണിക്കുക"}, "clear": {"en": "Clear", "ml": "മാറ്റുക"}, "showing_for": {"en": "Showing shops near", "ml": "ഇവിടത്തെ കടകൾ കാണിക്കുന്നു:"}, "featured_shops": {"en": "Featured shops", "ml": "തിരഞ്ഞെടുത്ത കടകൾ"}, "new_shops": {"en": "New on the marketplace", "ml": "പുതിയതായി ചേർന്ന കടകൾ"}, "popular_products": {"en": "Latest products", "ml": "പുതിയ സാധനങ്ങൾ"}, "offers": {"en": "Offers", "ml": "ഓഫറുകൾ"}, "no_shops_yet": {"en": "No shops here yet. Shop owners can register for free.", "ml": "ഇവിടെ ഇതുവരെ കടകളില്ല. കടയുടമകൾക്ക് സൗജന്യമായി ചേരാം."}, "no_products_yet": {"en": "No products yet.", "ml": "ഇതുവരെ സാധനങ്ങളില്ല."}, "no_results": {"en": "Nothing found. Try another word or place.", "ml": "ഒന്നും കണ്ടെത്തിയില്ല. മറ്റൊരു വാക്കോ സ്ഥലമോ നോക്കൂ."}, "view_shop": {"en": "View shop", "ml": "കട കാണുക"}, "view_all": {"en": "View all", "ml": "എല്ലാം കാണുക"}, "open_now": {"en": "Open now", "ml": "ഇപ്പോൾ തുറന്നിരിക്കുന്നു"}, "closed_now": {"en": "Closed now", "ml": "ഇപ്പോൾ അടച്ചിരിക്കുന്നു"}, "not_accepting": {"en": "Not taking orders right now", "ml": "ഇപ്പോൾ ഓർഡർ എടുക്കുന്നില്ല"}, "delivery": {"en": "Home delivery", "ml": "ഹോം ഡെലിവറി"}, "pickup": {"en": "Store pickup", "ml": "കടയിൽ നിന്ന് എടുക്കാം"}, "delivery_fee": {"en": "Delivery fee", "ml": "ഡെലിവറി ചാർജ്"}, "free": {"en": "Free", "ml": "സൗജന്യം"}, "min_order": {"en": "Minimum order", "ml": "കുറഞ്ഞ ഓർഡർ"}, "est_delivery": {"en": "Delivery time", "ml": "ഡെലിവറി സമയം"}, "opening_hours": {"en": "Opening hours", "ml": "തുറക്കുന്ന സമയം"}, "address": {"en": "Address", "ml": "വിലാസം"}, "map": {"en": "Open in Maps", "ml": "മാപ്പിൽ കാണുക"}, "whatsapp_shop": {"en": "WhatsApp the shop", "ml": "കടയിലേക്ക് വാട്സ്ആപ്പ്"}, "call_shop": {"en": "Call", "ml": "വിളിക്കുക"}, "add_to_cart": {"en": "Add to cart", "ml": "കാർട്ടിൽ ചേർക്കുക"}, "in_stock": {"en": "In stock", "ml": "സ്റ്റോക്കുണ്ട്"}, "out_of_stock": {"en": "Out of stock", "ml": "സ്റ്റോക്കില്ല"}, "sold_by": {"en": "Sold by", "ml": "വിൽക്കുന്നത്"}, "price": {"en": "Price", "ml": "വില"}, "qty": {"en": "Qty", "ml": "എണ്ണം"}, "remove": {"en": "Remove", "ml": "ഒഴിവാക്കുക"}, "update": {"en": "Update", "ml": "മാറ്റുക"}, "subtotal": {"en": "Items total", "ml": "സാധനങ്ങളുടെ വില"}, "total": {"en": "Total", "ml": "ആകെ"}, "cart_empty": {"en": "Your cart is empty.", "ml": "നിങ്ങളുടെ കാർട്ട് ഒഴിഞ്ഞതാണ്."}, "checkout": {"en": "Checkout", "ml": "ചെക്കൗട്ട്"}, "your_name": {"en": "Your name", "ml": "നിങ്ങളുടെ പേര്"}, "your_phone": {"en": "Mobile number", "ml": "മൊബൈൽ നമ്പർ"}, "delivery_address": {"en": "Delivery address", "ml": "ഡെലിവറി വിലാസം"}, "order_notes": {"en": "Notes for the shop (optional)", "ml": "കടയ്ക്കുള്ള കുറിപ്പ് (വേണമെങ്കിൽ)"}, "how_receive": {"en": "How do you want to receive it?", "ml": "എങ്ങനെ വാങ്ങണം?"}, "payment": {"en": "Payment", "ml": "പേയ്മെന്റ്"}, "cod": {"en": "Cash on delivery / pay at the shop", "ml": "സാധനം കിട്ടുമ്പോൾ / കടയിൽ പണം നൽകാം"}, "no_online_payment": {"en": "Online payment is not available. You pay the shop directly.", "ml": "ഓൺലൈൻ പേയ്മെന്റ് ഇല്ല. കടയിൽ നേരിട്ട് പണം നൽകാം."}, "place_order": {"en": "Place order on website", "ml": "വെബ്സൈറ്റിൽ ഓർഡർ ചെയ്യുക"}, "order_whatsapp": {"en": "Order on WhatsApp", "ml": "വാട്സ്ആപ്പിൽ ഓർഡർ ചെയ്യുക"}, "order_placed": {"en": "Order placed!", "ml": "ഓർഡർ ചെയ്തു!"}, "order_code": {"en": "Order number", "ml": "ഓർഡർ നമ്പർ"}, "track_order": {"en": "Track order", "ml": "ഓർഡർ നില അറിയുക"}, "status": {"en": "Status", "ml": "നില"}, "s_new": {"en": "New", "ml": "പുതിയത്"}, "s_confirmed": {"en": "Confirmed", "ml": "സ്ഥിരീകരിച്ചു"}, "s_preparing": {"en": "Preparing", "ml": "ഒരുക്കുന്നു"}, "s_ready": {"en": "Ready", "ml": "തയ്യാർ"}, "s_out_for_delivery": {"en": "Out for delivery", "ml": "ഡെലിവറിക്ക് പുറപ്പെട്ടു"}, "s_delivered": {"en": "Delivered", "ml": "എത്തിച്ചു"}, "s_cancelled": {"en": "Cancelled", "ml": "റദ്ദാക്കി"}, "language": {"en": "Language", "ml": "ഭാഷ"}, "privacy": {"en": "Privacy Policy", "ml": "സ്വകാര്യതാ നയം"}, "terms": {"en": "Terms & Conditions", "ml": "നിബന്ധനകൾ"}, "refund": {"en": "Cancellation & Refund", "ml": "റദ്ദാക്കലും റീഫണ്ടും"}, "contact": {"en": "Contact & Support", "ml": "ബന്ധപ്പെടുക"}, "pricing": {"en": "Plans & charges", "ml": "പ്ലാനുകളും ചാർജുകളും"}, "phone": {"en": "Phone", "ml": "ഫോൺ"}, "password": {"en": "Password", "ml": "പാസ്‌വേഡ്"}, "name": {"en": "Name", "ml": "പേര്"}, "save": {"en": "Save", "ml": "സേവ് ചെയ്യുക"}, "cancel": {"en": "Cancel", "ml": "വേണ്ട"}, "edit": {"en": "Edit", "ml": "തിരുത്തുക"}, "delete": {"en": "Delete", "ml": "ഒഴിവാക്കുക"}, "add_product": {"en": "Add product", "ml": "സാധനം ചേർക്കുക"}, "products": {"en": "Products", "ml": "സാധനങ്ങൾ"}, "orders": {"en": "Orders", "ml": "ഓർഡറുകൾ"}, "reports": {"en": "Reports", "ml": "റിപ്പോർട്ടുകൾ"}, "settings": {"en": "Shop settings", "ml": "കടയുടെ ക്രമീകരണം"}, "subscription": {"en": "Plan", "ml": "പ്ലാൻ"}, "support": {"en": "Support", "ml": "സഹായം"}, "send": {"en": "Send", "ml": "അയയ്ക്കുക"}, "demo_banner": {"en": "DEMO MODE — all shops, products and orders you see are sample test data.", "ml": "ഡെമോ മോഡ് — ഇവിടെ കാണുന്ന കടകളും സാധനങ്ങളും ഓർഡറുകളും പരീക്ഷണത്തിനുള്ള സാമ്പിൾ ഡാറ്റയാണ്."}, "install_app": {"en": "Install app", "ml": "ആപ്പ് ഇൻസ്റ്റാൾ ചെയ്യുക"}, "pending_notice": {"en": "Your shop is waiting for approval. It will go live after the admin approves it.", "ml": "നിങ്ങളുടെ കട അംഗീകാരത്തിനായി കാത്തിരിക്കുന്നു. അഡ്മിൻ അംഗീകരിച്ചാൽ കട പ്രവർത്തനക്ഷമമാകും."}, "footer_note": {"en": "Local shops, local people.", "ml": "നാട്ടിലെ കടകൾ, നാട്ടിലെ ആളുകൾ."}};
 
 /* ---------- tiny helpers ---------- */
@@ -128,12 +128,17 @@ const cartCount = () => Object.values(cartGet().items).reduce((a, b) => a + b, 0
 
 function renderChrome() {
   const u = S.user, admin = S.profile && S.profile.role === 'admin';
+  if (ADMIN_ONLY) {
+    $('#top').innerHTML = html`<a class="brand" href="#/admin">🔑 ${siteName()} — Admin</a><nav class="nav" aria-label="Main">${u ? html`<button class="linkbtn" data-act="logout" type="button">${t('logout')}</button>` : ''}</nav>`.s;
+    $('#placebar').innerHTML = ''; $('#stickycart').innerHTML = ''; $('#foot').innerHTML = '';
+    return;
+  }
   const n = cartCount();
   $('#top').innerHTML = html`
     <a class="brand" href="#/">🛍️ ${siteName()}</a>
     <nav class="nav" aria-label="Main">
       <a href="#/shops">${t('shops')}</a>
-      ${u ? (admin ? html`<a href="#/admin">${t('admin')}</a>` : html`<a href="#/dashboard">${t('my_shop')}</a>`)
+      ${u ? (admin ? '' : html`<a href="#/dashboard">${t('my_shop')}</a>`)
           : html`<a href="#/register">${t('register_shop')}</a><a href="#/login">${t('login')}</a>`}
       ${u ? html`<button class="linkbtn" data-act="logout" type="button">${t('logout')}</button>` : ''}
       <a class="cartlink" href="#/cart">🛒 ${t('cart')}${n ? html`<span class="badge">${n}</span>` : ''}</a>
@@ -530,7 +535,7 @@ route('/pricing', async () => {
     <li><b>Paid plans:</b> optional. A paid plan starts only after the marketplace team confirms they have received your payment, and it is valid for the period they set.</li>
     <li><b>Featured listing:</b> ${setting('featured_price_note')}</li><li><b>Local advertisements:</b> ${setting('ad_note')}</li>
     <li><b>Order commission:</b> ${pct > 0 ? html`${pct}% of the item value of each <i>delivered</i> order. Commission is recorded in your account and settled with the marketplace team outside the website.` : 'Currently 0%. If a commission is introduced, it will be shown here and shop owners will be informed before it applies.'}</li>
-    <li><b>Payments:</b> The website does not process online payments. Customers pay the shop directly (cash on delivery or at the shop). Subscription and commission payments are made to the marketplace outside the website, and recorded by the administrator.</li></ul>
+    <li><b>Payments:</b> Customer orders are paid directly to the shop (cash on delivery or at the shop); the website does not take customers' money. Shops can pay plan fees to the marketplace by UPI or Razorpay when enabled; the team confirms each payment before activating a plan, and records it in your account.</li></ul>
     <a class="btn gold" href="#/register">${t('register_shop')}</a></div></div>`,
     { title: `Plans & charges for shops | ${siteName()}`, desc: 'Free starter plan for small shops, with optional paid plans. All charges explained.' });
 });
@@ -583,8 +588,8 @@ route('/refund-policy', async () => view(html`<div class="wrap"><article class="
 
 /* ---------- login / register ---------- */
 route('/login', async () => {
-  if (S.user) { location.hash = S.profile && S.profile.role === 'admin' ? '#/admin' : '#/dashboard'; return; }
-  view(html`<div class="form-card" style="max-width:460px"><h1>${t('login')}</h1><form data-form="login">
+  if (S.user) { location.hash = redirectFor(); return; }
+  view(html`<div class="form-card" style="max-width:460px"><h1>${ADMIN_ONLY ? 'Admin login' : t('login')}</h1><form data-form="login">
     ${field('Email', 'email', '', 'type="email" required autocomplete="username"')}
     <label for="f_password">${t('password')}</label><input id="f_password" name="password" type="password" required autocomplete="current-password">
     <button class="btn block" style="margin-top:18px" type="submit">${t('login')}</button></form>
@@ -632,7 +637,7 @@ route('/register', async () => {
    ===================================================================== */
 function ownerGuard() {
   if (!S.user) { location.hash = '#/login'; return false; }
-  if (S.profile && S.profile.role === 'admin') { location.hash = '#/admin'; return false; }
+  if (S.profile && S.profile.role === 'admin') { location.hash = '#/'; return false; }
   if (!S.shop) { view(html`<div class="form-card"><h1>No shop on this account</h1><p>This login has no shop attached. If you registered and the shop is missing, please contact support.</p><a class="btn" href="#/contact">${t('contact')}</a></div>`, { noindex: true }); return false; }
   return true;
 }
@@ -771,13 +776,33 @@ route('/dashboard/plan', async () => {
   const open = must(reqs)[0]; const payments = must(pays);
   dashLayout('/plan', html`<h1>${t('subscription')}</h1><div class="panel"><p>Current plan: <b>${cur.name}</b>${sh.plan_until && cur.price > 0 ? html` · valid until <b>${sh.plan_until}</b>` : ''}</p>${isFeatured(sh) ? html`<p><span class="tag gold">★ Featured</span> until ${sh.featured_until}</p>` : ''}</div>
   <div class="shopcards mb">${S.plans.filter(p => p.active).map(p => html`<div class="card" style="padding:16px"><h3>${p.name}</h3><div class="price" style="font-size:1.6rem">${p.price === 0 ? t('free') : html`${inr(p.price)}<span class="muted small"> / month</span>`}</div><p class="small">${p.description}</p>
-    ${p.id === cur.id ? html`<span class="tag">✅ Current</span>` : (p.price > 0 ? html`<button class="btn small" type="button" data-act="planrequest" data-id="${p.id}" data-name="${p.name}">Request this plan</button>` : '')}</div>`)}</div>
+    ${p.id === cur.id ? html`<span class="tag">✅ Current</span>` : (p.price > 0 ? payBox(p, sh) : '')}</div>`)}</div>
   ${open ? html`<div class="notice">Your request for <b>${open.plans ? open.plans.name : ''}</b> is open. The team will contact you on WhatsApp.</div>` : ''}
-  <div class="panel"><h2>How charges work</h2><ul><li>The website does <b>not</b> take payments. For a paid plan, the marketplace team contacts you, tells you how to pay, and after they receive your payment they activate the plan.</li>
+  <div class="panel"><h2>How charges work</h2><ul><li>Pay the marketplace by <b>UPI</b> or <b>Razorpay</b> (when enabled below). The plan is <b>not</b> activated automatically: the team checks that the money has arrived and then activates it. Customer orders are still paid directly to the shop.</li>
     <li>If a paid plan ends, your shop returns to the free Starter plan. Products stay, but you cannot add more than the free limit.</li>
     <li>Order commission: ${pct > 0 ? html`<b>${pct}%</b> of delivered order item value, settled with the team outside the website.` : html`currently <b>0%</b>.`}</li></ul><p><a href="#/pricing">Full details of charges</a></p></div>
   ${payments.length ? html`<div class="panel"><h2>Payments recorded for your shop</h2><div class="tablewrap"><table class="t"><tr><th>Date</th><th>Type</th><th>Amount</th><th>Reference</th></tr>${payments.map(r => html`<tr><td>${dOnly(r.created_at)}</td><td>${r.kind}</td><td>${inr(r.amount)}</td><td>${r.reference}</td></tr>`)}</table></div></div>` : ''}`, 'Plan');
 });
+
+function payBox(p, sh) {
+  const upi = setting('upi_id'), rz = setting('razorpay_key_id'); const note = `${siteName()} ${p.name} plan - ${sh.name}`.slice(0, 50);
+  const link = upi ? `upi://pay?pa=${enc(upi)}&pn=${enc(setting('upi_name') || siteName())}&am=${p.price}&cu=INR&tn=${enc(note)}` : '';
+  return html`<div class="stack-s">
+    ${rz ? html`<button class="btn gold small block" type="button" data-act="razorpay" data-id="${p.id}">💳 Pay ${inr(p.price)} with Razorpay</button>` : ''}
+    ${upi ? html`<details style="margin-top:8px"><summary class="small"><b>Pay ${inr(p.price)} by UPI</b></summary>
+      <p class="small">UPI ID: <b>${upi}</b>${setting('upi_name') ? ' (' + setting('upi_name') + ')' : ''}<br><a class="btn small" href="${link}">Open UPI app</a></p>
+      <form data-form="upiclaim" data-id="${p.id}"><label class="small" for="utr${p.id}">After paying, enter the UPI reference / UTR number</label>
+      <input id="utr${p.id}" name="ref" required minlength="6" maxlength="40" autocomplete="off"><button class="btn small" style="margin-top:8px" type="submit">I have paid</button></form></details>` : ''}
+    <button class="btn ghost small block" style="margin-top:8px" type="button" data-act="planrequest" data-id="${p.id}" data-name="${p.name}">Request without paying now</button></div>`;
+}
+function loadRazorpay() {
+  return new Promise((ok, no) => { if (window.Razorpay) return ok(); const sc = document.createElement('script'); sc.src = 'https://checkout.razorpay.com/v1/checkout.js'; sc.onload = ok; sc.onerror = () => no(new Error('Could not load Razorpay. Check your internet connection.')); document.head.appendChild(sc); });
+}
+async function claimPlan(planId, method, ref, amount) {
+  const ex = must(await sb.from('plan_requests').select('id').eq('shop_id', S.shop.id).eq('status', 'open'));
+  if (ex.length) must(await sb.from('plan_requests').update({ plan_id: planId, pay_method: method, pay_ref: ref, amount }).eq('id', ex[0].id));
+  else must(await sb.from('plan_requests').insert({ shop_id: S.shop.id, plan_id: planId, pay_method: method, pay_ref: ref, amount }));
+}
 
 route('/dashboard/support', async () => {
   if (!ownerGuard()) return; const tickets = must(await sb.from('tickets').select('*').eq('shop_id', S.shop.id).order('id', { ascending: false }));
@@ -845,7 +870,7 @@ route('/admin/shop/(\\d+)', async ([id]) => {
   <div class="panel"><h2>Approval</h2><form data-form="adminshop" data-id="${s.id}"><label for="f_note">Note to the shop owner (shown if rejected or suspended)</label><input id="f_note" name="note" value="${s.status_note}" maxlength="300">
     <div class="row" style="margin-top:12px">${['pending', 'rejected'].includes(s.status) ? html`<button class="btn" type="submit" name="action" value="approved">✅ Approve</button>` : ''}${['pending', 'approved'].includes(s.status) ? html`<button class="btn danger" type="submit" name="action" value="rejected">Reject</button>` : ''}
       ${s.status === 'approved' ? html`<button class="btn danger" type="submit" name="action" value="suspended">Suspend</button>` : ''}${s.status === 'suspended' ? html`<button class="btn" type="submit" name="action" value="approved">Reinstate</button>` : ''}</div></form></div>
-  <div class="panel"><h2>Plan</h2><p>Current: <b>${plan.name}</b>${s.plan_until ? ` (set to expire ${s.plan_until})` : ''}</p>${openReq.map(r => html`<div class="notice">Open request for <b>${r.plans ? r.plans.name : ''}</b> (${dOnly(r.created_at)}). Record the payment below, then set the plan here.</div>`)}
+  <div class="panel"><h2>Plan</h2><p>Current: <b>${plan.name}</b>${s.plan_until ? ` (set to expire ${s.plan_until})` : ''}</p>${openReq.map(r => html`<div class="notice">Open request for <b>${r.plans ? r.plans.name : ''}</b> (${dOnly(r.created_at)}).${r.pay_method ? html` Shop says it paid <b>${inr(r.amount)}</b> by <b>${r.pay_method.toUpperCase()}</b>, reference <b>${r.pay_ref}</b>. <u>Check this in your bank / Razorpay dashboard first.</u> Do not trust it until you see the money.` : ''} Record the payment below, then set the plan here.</div>`)}
     <form class="row" data-form="adminplan" data-id="${s.id}"><select name="plan_id" style="max-width:240px">${S.plans.map(p => html`<option value="${p.id}" ${s.plan_id === p.id ? raw('selected') : ''}>${p.name} (${inr(p.price)})</option>`)}</select><input type="date" name="plan_until" value="${s.plan_until || ''}" style="max-width:190px" aria-label="Valid until"><button class="btn" type="submit">Save plan</button></form>
     <p class="hint">A paid plan applies only until the “valid until” date, then the shop falls back to the free plan automatically.</p></div>
   <div class="panel"><h2>Featured listing</h2><p>${s.featured_until ? html`Featured until <b>${s.featured_until}</b>` : 'Not featured'}</p><form class="row" data-form="adminfeatured" data-id="${s.id}"><input type="date" name="featured_until" value="${s.featured_until || ''}" style="max-width:190px"><button class="btn" type="submit">Save</button></form>
@@ -900,8 +925,8 @@ route('/admin/categories', async () => {
 route('/admin/plans', async () => {
   if (!adminGuard()) return; const reqs = must(await sb.from('plan_requests').select('*, shops(name), plans(name,price)').eq('status', 'open').order('id'));
   adminLayout('/plans', html`<h1>Subscription plans</h1>
-  ${reqs.length ? html`<div class="panel"><h2>Upgrade requests</h2><div class="tablewrap"><table class="t"><tr><th>Shop</th><th>Plan</th><th>Requested</th><th></th></tr>${reqs.map(r => html`<tr><td><a href="#/admin/shop/${r.shop_id}">${one(r.shops).name}</a></td><td>${one(r.plans).name} (${inr(one(r.plans).price)})</td><td>${dOnly(r.created_at)}</td><td><button class="btn ghost small" type="button" data-act="dismissreq" data-id="${r.id}">Dismiss</button></td></tr>`)}</table></div>
-    <p class="hint">Contact the shop, receive payment outside the app, record it on the shop page, then set the plan and its end date.</p></div>` : ''}
+  ${reqs.length ? html`<div class="panel"><h2>Upgrade requests</h2><div class="tablewrap"><table class="t"><tr><th>Shop</th><th>Plan</th><th>Payment claimed</th><th>Requested</th><th></th></tr>${reqs.map(r => html`<tr><td><a href="#/admin/shop/${r.shop_id}">${one(r.shops).name}</a></td><td>${one(r.plans).name} (${inr(one(r.plans).price)})</td><td>${r.pay_method ? html`<b>${r.pay_method.toUpperCase()}</b> ${inr(r.amount)}<br><span class="small">${r.pay_ref}</span>` : html`<span class="muted">not paid yet</span>`}</td><td>${dOnly(r.created_at)}</td><td><button class="btn ghost small" type="button" data-act="dismissreq" data-id="${r.id}">Dismiss</button></td></tr>`)}</table></div>
+    <p class="hint">Check the claimed payment in your bank or Razorpay dashboard, record it on the shop page, then set the plan and its end date.</p></div>` : ''}
   <div class="panel"><h2>Add a plan</h2><form class="row" data-form="planadd"><input name="name" placeholder="Name" required maxlength="40" style="max-width:180px"><input name="price" type="number" placeholder="₹ / month" min="0" required style="max-width:130px"><input name="max_products" type="number" placeholder="Max products (0=unlimited)" min="0" style="max-width:220px"><input name="description" placeholder="Description shown to shops" maxlength="300" style="max-width:300px"><button class="btn" type="submit">Add</button></form></div>
   ${S.plans.map(p => html`<form class="panel" data-form="plansave" data-id="${p.id}"><div class="grid2"><div>${field('Name', 'name', p.name, 'maxlength="40"')}</div><div>${field('Price (₹ per month)', 'price', p.price, 'type="number" min="0"')}</div><div>${field('Max products (0 = unlimited)', 'max_products', p.max_products, 'type="number" min="0"')}</div><div>${field('Order', 'sort', p.sort, 'type="number"')}</div></div>
     ${field('Description', 'description', p.description, 'maxlength="300"')}${checkbox('Offered to shops', 'active', p.active)}<button class="btn small" type="submit">Save</button></form>`)}`, 'Plans');
@@ -941,6 +966,10 @@ route('/admin/settings', async () => {
   adminLayout('/settings', html`<h1>Settings</h1><form class="panel" data-form="adminsettings">
   ${field('Marketplace name', 'site_name', setting('site_name'), 'maxlength="40" required')}<h2 style="margin-top:22px">Commission</h2>
   ${field('Order commission (% of item value on delivered orders, 0 = none)', 'commission_pct', setting('commission_pct'), 'type="number" min="0" max="30" step="0.1"')}<p class="hint">Applies only to new orders. Shown to shop owners on the Plans & charges page. Commission is recorded, not collected by the website.</p>
+  <h2 style="margin-top:22px">Receive payments from shops</h2>
+  <div class="grid2"><div>${field('Your UPI ID (e.g. name@bank)', 'upi_id', setting('upi_id'), 'maxlength="60" autocomplete="off"')}</div><div>${field('Name shown in the UPI app', 'upi_name', setting('upi_name'), 'maxlength="40"')}</div>
+    <div>${field('Razorpay Key ID (starts with rzp_)', 'razorpay_key_id', setting('razorpay_key_id'), 'maxlength="60" autocomplete="off" placeholder="rzp_live_..."')}</div></div>
+  <p class="hint">Shops then see “Pay by UPI” and “Pay with Razorpay” on their Subscription page. Paste only the Razorpay <b>Key ID</b>, never the Key Secret. Plans are activated by you after you see the money in your bank / Razorpay dashboard; the website does not verify payments automatically. Leave a box empty to hide that option.</p>
   <h2 style="margin-top:22px">Business & contact details (shown on policy and contact pages)</h2>${field('Operator / business name', 'operator_name', setting('operator_name'), 'maxlength="120"')}
   <div class="grid2"><div>${field('Support email', 'contact_email', setting('contact_email'), 'type="email" maxlength="120"')}</div><div>${field('Support phone', 'contact_phone', setting('contact_phone'), 'type="tel" maxlength="20"')}</div><div>${field('Support WhatsApp (10 digits)', 'contact_whatsapp', setting('contact_whatsapp'), 'type="tel" maxlength="15"')}</div></div>
   <label for="f_contact_address">Business address</label><textarea id="f_contact_address" name="contact_address" maxlength="300" style="min-height:80px">${setting('contact_address')}</textarea>
@@ -984,6 +1013,14 @@ const actions = {
     must(await sb.from('plan_requests').insert({ shop_id: S.shop.id, plan_id: Number(el.dataset.id) }));
     toast('Request sent. The team will contact you on WhatsApp with payment details. Your plan changes only after they confirm your payment.'); router(true);
   },
+  async razorpay(el) {
+    const p = S.plans.find(x => String(x.id) === el.dataset.id), key = setting('razorpay_key_id'); if (!p || !key) return;
+    await loadRazorpay();
+    const rzp = new window.Razorpay({ key, amount: p.price * 100, currency: 'INR', name: siteName(), description: p.name + ' plan - 1 month', prefill: { name: S.shop.owner_name, email: S.user.email, contact: S.profile.phone || S.shop.whatsapp },
+      notes: { shop_id: String(S.shop.id), plan_id: String(p.id) }, theme: { color: '#0f6b3e' },
+      handler: r => { claimPlan(p.id, 'razorpay', r.razorpay_payment_id, p.price).then(() => { toast('Payment received by Razorpay (' + r.razorpay_payment_id + '). The team will confirm it and activate your plan.'); router(true); }).catch(e => toast('Paid, but saving failed: ' + e.message + '. Please contact support with payment ID ' + r.razorpay_payment_id, 'error')); } });
+    rzp.on('payment.failed', r => toast('Payment failed: ' + ((r.error && r.error.description) || 'please try again'), 'error')); rzp.open();
+  },
   async blockproduct(el) { must(await sb.from('products').update({ blocked: el.dataset.val !== '1' }).eq('id', el.dataset.id)); router(true); },
   async dismissreq(el) { must(await sb.from('plan_requests').update({ status: 'dismissed' }).eq('id', el.dataset.id)); router(true); },
 };
@@ -1014,7 +1051,7 @@ async function removeImage(url) {
   if (m) { try { await sb.storage.from('images').remove([decodeURIComponent(m[1])]); } catch (e) { /* ignore */ } }
 }
 
-const redirectFor = () => (S.profile && S.profile.role === 'admin' ? '#/admin' : '#/dashboard');
+const redirectFor = () => (ADMIN_ONLY ? '#/admin' : (S.profile && S.profile.role === 'admin') ? '#/' : '#/dashboard');
 const forms = {
   search(f, fd) { const term = clean(fd.get('q'), 80); location.hash = '#/search?q=' + enc(term); },
   place(f, fd) { S.place = clean(fd.get('place'), 60); ls.set('nk_place', S.place); renderChrome(); router(true); },
@@ -1033,6 +1070,10 @@ const forms = {
     const items = Object.entries(cart.items).map(([id, qty]) => ({ product_id: Number(id), qty }));
     const res = must(await sb.rpc('place_order', { p_shop: cart.shopId, p_items: items, p_name: name, p_phone: phone, p_address: address, p_notes: cleanML(fd.get('notes'), 500), p_fulfilment: mode, p_channel: channel }));
     ls.set('nk_customer', { name, phone, address }); cartSet({ shopId: null, items: {} }); location.hash = `#/order/${res.code}?placed=1`;
+  },
+  async upiclaim(f, fd) {
+    const ref = clean(fd.get('ref'), 40); const p = S.plans.find(x => String(x.id) === f.dataset.id); if (!p || ref.length < 6) throw new Error('Enter the UPI reference / UTR number from your payment app.');
+    await claimPlan(p.id, 'upi', ref, p.price); toast('Thank you. The team will match your UPI payment and activate the plan.'); router(true);
   },
   async ticket(f, fd) {
     const name = clean(fd.get('name'), 80), phone = normPhone(fd.get('phone')), subject = clean(fd.get('subject'), 120), message = cleanML(fd.get('message'), 2000);
@@ -1128,8 +1169,10 @@ const forms = {
   async ticketsave(f, fd) { must(await sb.from('tickets').update({ status: fd.get('status'), admin_note: cleanML(fd.get('admin_note'), 500) }).eq('id', f.dataset.id)); toast('Ticket updated.'); },
   async adminsettings(f, fd) {
     const pct = parseFloat(fd.get('commission_pct') || '0'); if (!(pct >= 0 && pct <= 30)) throw new Error('Commission must be a number between 0 and 30.');
+    const upi = clean(fd.get('upi_id'), 60), rzk = clean(fd.get('razorpay_key_id'), 60);
+    if (upi && !/^[\w.\-]{2,}@[A-Za-z]{2,}$/.test(upi)) throw new Error('UPI ID looks wrong. It should look like name@bank.'); if (rzk && !/^rzp_(test|live)_[A-Za-z0-9]+$/.test(rzk)) throw new Error('Razorpay Key ID should start with rzp_live_ or rzp_test_. Never paste the Key Secret.');
     const wa = String(fd.get('contact_whatsapp') || '').trim(); const rows = [['site_name', clean(fd.get('site_name'), 40) || 'Nammude Kada'], ['commission_pct', String(pct)], ['contact_email', clean(fd.get('contact_email'), 120)], ['contact_phone', clean(fd.get('contact_phone'), 20)], ['contact_whatsapp', wa ? (normPhone(wa) || '') : ''],
-      ['contact_address', cleanML(fd.get('contact_address'), 300)], ['operator_name', clean(fd.get('operator_name'), 120)], ['featured_price_note', cleanML(fd.get('featured_price_note'), 400)], ['ad_note', cleanML(fd.get('ad_note'), 400)]];
+      ['upi_id', upi], ['upi_name', clean(fd.get('upi_name'), 40)], ['razorpay_key_id', rzk], ['contact_address', cleanML(fd.get('contact_address'), 300)], ['operator_name', clean(fd.get('operator_name'), 120)], ['featured_price_note', cleanML(fd.get('featured_price_note'), 400)], ['ad_note', cleanML(fd.get('ad_note'), 400)]];
     must(await sb.from('settings').upsert(rows.map(([key, value]) => ({ key, value })), { onConflict: 'key' })); await loadBase(); renderChrome(); toast('Settings saved.');
   },
 };
@@ -1155,6 +1198,8 @@ async function loadSession() { const r = await sb.auth.getSession(); S.user = r.
 
 async function router(keep) {
   if (!sb) return; clearInterval(S.timer); const hash = location.hash.slice(1) || '/'; const qi = hash.indexOf('?'); const path = qi < 0 ? hash : hash.slice(0, qi); const q = new URLSearchParams(qi < 0 ? '' : hash.slice(qi + 1));
+  if (ADMIN_ONLY && !/^\/(admin|login|reset|dashboard\/password)/.test(path)) { location.hash = S.user ? '#/admin' : '#/login'; return; }
+  if (!ADMIN_ONLY && /^\/admin/.test(path)) return notFound();
   if (!keep) { appEl().innerHTML = spinner(); window.scrollTo(0, 0); } renderChrome(); const y = window.scrollY; S.route = hash;
   for (const [re, fn] of routes) {
     const m = path.match(re); if (!m) continue;
@@ -1184,6 +1229,6 @@ async function boot() {
   sb.auth.onAuthStateChange((ev, session) => { setTimeout(async () => {
     S.user = session ? session.user : null; await loadProfile(); renderChrome();
     if (ev === 'PASSWORD_RECOVERY') location.hash = '#/reset'; }, 0); });
-  setupManifest(); renderChrome(); await router(false);
+  if (!ADMIN_ONLY) setupManifest(); renderChrome(); await router(false);
 }
 boot();
