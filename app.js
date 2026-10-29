@@ -6,9 +6,10 @@
 'use strict';
 
 const CONFIG = {
-SUPABASE_URL: 'https://mxwcnkopzlktfgyyhych.supabase.co',
-  SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14d2Nua29wemxrdGZneXloeWNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzU3ODgsImV4cCI6MjEwMjExMTc4OH0.jEm_GRhCNcmeVRphRy5XdzCopGhP79CzxrR-9hOQROw',
+  SUPABASE_URL: 'https://YOUR-PROJECT-ID.supabase.co',
+  SUPABASE_ANON_KEY: 'YOUR-PUBLIC-ANON-KEY',
 };
+
 /* ---------- constants ---------- */
 const IST = 'Asia/Kolkata';
 const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
@@ -51,7 +52,10 @@ const S = {
   cats: [], plans: [], settings: {},
   user: null, profile: null, shop: null,
   timer: null, route: '',
+  app: false, installEvt: null,
 };
+const isStandalone = () => { try { return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true; } catch (e) { return false; } };
+S.app = !window.NK_ADMIN_ONLY && (ls.get('nk_app', null) === null ? isStandalone() : !!ls.get('nk_app', false));
 const t = k => (I18N[k] && (I18N[k][S.lang] || I18N[k].en)) || k;
 const setting = k => S.settings[k] || '';
 const siteName = () => setting('site_name') || 'Nammude Kada';
@@ -138,6 +142,21 @@ function renderChrome() {
     return;
   }
   const n = cartCount();
+  document.body.classList.toggle('appmode', S.app);
+  const installBtn = isStandalone() ? '' : html`<button class="linkbtn modebtn" data-act="install" type="button">⬇ ${S.lang === 'ml' ? 'ഇൻസ്റ്റാൾ' : 'Install'}</button>`;
+  const toggleBtn = html`${S.app ? installBtn : ''}<button class="linkbtn modebtn" data-act="appmode" type="button">${S.app ? '🌐 ' + (S.lang === 'ml' ? 'വെബ്സൈറ്റ്' : 'Website') : '📱 ' + (S.lang === 'ml' ? 'ആപ്പ് മോഡ്' : 'App mode')}</button>`;
+  const langBox = html`<span class="langbox"><a class="${S.lang === 'en' ? 'on' : ''}" href="#" data-act="lang" data-lang="en">EN</a><a class="${S.lang === 'ml' ? 'on' : ''}" href="#" data-act="lang" data-lang="ml">മലയാളം</a></span>`;
+  const hashNow = location.hash || '#/'; const pth = hashNow.slice(1).split('?')[0];
+  const tab = /^\/(shops|category|s\/)/.test(pth) ? 'shops' : /^\/search/.test(pth) ? 'search' : /^\/(cart|checkout)/.test(pth) ? 'cart' : /^\/(login|register|dashboard|reset)/.test(pth) ? 'acct' : (pth === '/' ? 'home' : '');
+  let tb = document.getElementById('tabbar'); if (!tb) { tb = document.createElement('nav'); tb.id = 'tabbar'; tb.className = 'tabbar'; tb.setAttribute('aria-label', 'App menu'); document.body.appendChild(tb); }
+  const tabItem = (id, href, ico, label, extra) => html`<a class="${tab === id ? 'on' : ''}" href="${href}"><span class="i" aria-hidden="true">${ico}</span>${label}${extra || ''}</a>`;
+  tb.innerHTML = S.app ? html`${tabItem('home', '#/', '🏠', t('home'))}${tabItem('shops', '#/shops', '🏪', t('shops'))}${tabItem('search', '#/search', '🔍', t('search'))}${tabItem('cart', '#/cart', '🛒', t('cart'), n ? html`<span class="badge">${n}</span>` : '')}${tabItem('acct', u ? (admin ? '#/' : '#/dashboard') : '#/login', '👤', S.lang === 'ml' ? 'അക്കൗണ്ട്' : 'Account')}`.s : '';
+  if (S.app) {
+    $('#top').innerHTML = html`<a class="brand" href="#/">🛍️ ${siteName()}</a><nav class="nav" aria-label="Main">${toggleBtn}${u ? html`<button class="linkbtn" data-act="logout" type="button">${t('logout')}</button>` : ''}${langBox}</nav>`.s;
+    $('#placebar').innerHTML = S.place && !/^#\/(dashboard|admin)/.test(hashNow) ? html`<div class="placebar"><div class="wrap row between"><span>📍 ${t('showing_for')} <b>${S.place}</b></span><button class="btn ghost small" data-act="clearplace" type="button">${t('clear')}</button></div></div>`.s : '';
+    $('#foot').innerHTML = ''; $('#stickycart').innerHTML = '';
+    return;
+  }
   $('#top').innerHTML = html`
     <a class="brand" href="#/">🛍️ ${siteName()}</a>
     <nav class="nav" aria-label="Main">
@@ -145,6 +164,7 @@ function renderChrome() {
       ${u ? (admin ? '' : html`<a href="#/dashboard">${t('my_shop')}</a>`)
           : html`<a href="#/register">${t('register_shop')}</a><a href="#/login">${t('login')}</a>`}
       ${u ? html`<button class="linkbtn" data-act="logout" type="button">${t('logout')}</button>` : ''}
+      ${toggleBtn}
       <a class="cartlink" href="#/cart">🛒 ${t('cart')}${n ? html`<span class="badge">${n}</span>` : ''}</a>
       <span class="langbox">
         <a class="${S.lang === 'en' ? 'on' : ''}" href="#" data-act="lang" data-lang="en">EN</a>
@@ -1130,6 +1150,14 @@ async function addToCart(pid, shopId, stock, qty, el) {
   cart.items[pid] = Math.min((cart.items[pid] || 0) + qty, limit, 99); cartSet(cart); toast(t('add_to_cart') + ' ✓');
 }
 const actions = {
+  appmode() {
+    S.app = !S.app; ls.set('nk_app', S.app); renderChrome(); window.scrollTo(0, 0);
+    if (S.app) { toast(S.lang === 'ml' ? 'ആപ്പ് മോഡ്. താഴെ മെനു ഉപയോഗിക്കാം.' : 'App mode on. Use the menu at the bottom.'); if (S.installEvt) toast(S.lang === 'ml' ? 'ഫോണിൽ ഇൻസ്റ്റാൾ ചെയ്യാൻ "ഇൻസ്റ്റാൾ" ടാപ്പ് ചെയ്യുക.' : 'Tap "Install" to add it to your phone.'); }
+  },
+  async install() {
+    if (S.installEvt) { S.installEvt.prompt(); try { await S.installEvt.userChoice; } catch (e) { /* ignore */ } S.installEvt = null; renderChrome(); return; }
+    toast(S.lang === 'ml' ? 'ബ്രൗസർ മെനുവിൽ നിന്ന് "Add to Home screen" (iPhone: Share → Add to Home Screen) തിരഞ്ഞെടുക്കുക.' : 'In your browser menu choose "Add to Home screen" (iPhone: Share → Add to Home Screen).', 'ok');
+  },
   lang(el) { S.lang = el.dataset.lang === 'ml' ? 'ml' : 'en'; ls.set('nk_lang', S.lang); renderChrome(); router(true); },
   clearplace() { S.place = ''; ls.set('nk_place', ''); renderChrome(); router(true); },
   async logout() { await sb.auth.signOut(); S.user = S.profile = S.shop = null; renderChrome(); location.hash = '#/'; },
@@ -1424,6 +1452,8 @@ function setupManifest() {
   } catch (e) { /* optional */ }
 }
 
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEvt = e; if (sb) renderChrome(); });
+window.addEventListener('appinstalled', () => { S.installEvt = null; });
 async function boot() {
   if (!configured() || !window.supabase) { appEl().innerHTML = needsSetup().s; $('#top').innerHTML = `<a class="brand" href="#/">🛍️ ${esc(CONFIG && 'Nammude Kada')}</a>`; return; }
   sb = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
