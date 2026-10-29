@@ -2,7 +2,12 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta id="vp" name="viewport" content="width=device-width,initial-scale=1">
+<script>
+/* Website mode on phones is laid out like the desktop site (compact); App mode uses the normal phone layout. */
+try{var a=localStorage.getItem('nk_app');var app=a===null?(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true):JSON.parse(a);
+if(!app&&Math.min(screen.width,screen.height)<700)document.getElementById('vp').setAttribute('content','width=1000');}catch(e){}
+</script>
 <title>Nammude Kada — local shops in Kerala</title>
 <meta name="description" content="Find nearby shops in your Kerala town, browse their products and order on WhatsApp or the website. Home delivery or store pickup.">
 <meta name="theme-color" content="#0f6b3e">

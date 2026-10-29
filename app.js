@@ -70,7 +70,10 @@ const priceOf = k => { const n = parseInt(setting(k), 10); return n > 0 ? n : 0;
 const isFeatured = s => !!(s.featured_until && s.featured_until >= todayIST());
 
 let sb = null;
-const configured = () => /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(CONFIG.SUPABASE_URL) && !/YOUR/.test(CONFIG.SUPABASE_ANON_KEY) && CONFIG.SUPABASE_ANON_KEY.length > 40;
+CONFIG.SUPABASE_URL = String(CONFIG.SUPABASE_URL).trim().replace(/\/+$/, '').replace(/\/(rest|auth)\/v1.*$/, ''); CONFIG.SUPABASE_ANON_KEY = String(CONFIG.SUPABASE_ANON_KEY).trim();
+const urlOk = () => /^https:\/\/[a-z0-9-]+\.supabase\.(co|in)$/i.test(CONFIG.SUPABASE_URL) && !/YOUR/i.test(CONFIG.SUPABASE_URL);
+const keyOk = () => !/YOUR/i.test(CONFIG.SUPABASE_ANON_KEY) && CONFIG.SUPABASE_ANON_KEY.length > 40;
+const configured = () => urlOk() && keyOk();
 
 /* Supabase returns {data, error}. Turn errors into exceptions with a readable message. */
 function must(res) {
@@ -239,7 +242,8 @@ const range = (page, per = PER_PAGE) => [(page - 1) * per, page * per - 1];
 const field = (label, name, value = '', attrs = '') => html`<label for="f_${name}">${label}</label><input id="f_${name}" name="${name}" value="${value}" ${raw(attrs)}>`;
 const checkbox = (label, name, on) => html`<label class="check"><input type="checkbox" name="${name}" value="1" ${on ? raw('checked') : ''}> <span>${label}</span></label>`;
 const needsSetup = () => html`<div class="setup-card"><h1>One-time setup needed</h1>
-  <p>Open <code>app.js</code> and put your Supabase <b>Project URL</b> and <b>anon public key</b> at the top (<code>CONFIG</code>). Then run <code>supabase.sql</code> in the Supabase SQL Editor. See README.md.</p></div>`;
+  <p><b>Problem found:</b> ${!window.supabase ? 'the Supabase library could not be loaded (check your internet / ad-blocker, and that index.html still has the supabase-js <script> line).' : !urlOk() ? 'SUPABASE_URL in app.js is still the placeholder or looks wrong. It must look like https://abcdxyz.supabase.co' : 'SUPABASE_ANON_KEY in app.js is still the placeholder or too short.'}</p>
+  <p>Open <code>app.js</code> and put your Supabase <b>Project URL</b> and <b>anon public key</b> at the top (<code>CONFIG</code>), save it on GitHub, wait a minute and refresh. Then run <code>supabase.sql</code> in the Supabase SQL Editor. See README.md.</p></div>`;
 
 /* ---------- queries ---------- */
 const SHOP_SEL = '*, categories(name_en,name_ml,icon,slug)';
@@ -1150,7 +1154,9 @@ async function addToCart(pid, shopId, stock, qty, el) {
 }
 const actions = {
   appmode() {
-    S.app = !S.app; ls.set('nk_app', S.app); renderChrome(); window.scrollTo(0, 0);
+    S.app = !S.app; ls.set('nk_app', S.app);
+    if (Math.min(screen.width, screen.height) < 700) { location.reload(); return; } // phones: reload so the page width switches (website = compact desktop-style, app = phone layout)
+    renderChrome(); window.scrollTo(0, 0);
     if (S.app) { toast(S.lang === 'ml' ? 'ആപ്പ് മോഡ്. താഴെ മെനു ഉപയോഗിക്കാം.' : 'App mode on. Use the menu at the bottom.'); if (S.installEvt) toast(S.lang === 'ml' ? 'ഫോണിൽ ഇൻസ്റ്റാൾ ചെയ്യാൻ "ഇൻസ്റ്റാൾ" ടാപ്പ് ചെയ്യുക.' : 'Tap "Install" to add it to your phone.'); }
   },
   async install() {
