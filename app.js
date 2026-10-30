@@ -585,11 +585,11 @@ route('/pricing', async () => {
   <p>${siteName()} is free to start. Here is exactly what shop owners pay — nothing is charged automatically.</p>
   <div class="shopcards">${S.plans.filter(p => p.active).map(p => html`<div class="card" style="padding:16px"><h3>${p.name}</h3>
     <div class="price" style="font-size:1.8rem">${p.price === 0 ? t('free') : html`${inr(p.price)}<span class="muted small"> / month</span>`}</div>
-    <p class="small">${p.description}</p><p class="small muted">${p.max_products ? 'Up to ' + p.max_products + ' products' : 'Unlimited products'}</p></div>`)}</div>
+    <p class="small">${p.description}</p><p class="small muted">${p.max_products ? 'Up to ' + p.max_products + ' products' : 'Unlimited products'} · ${p.max_orders_month ? 'up to ' + p.max_orders_month + ' orders per month' : 'unlimited orders'}</p></div>`)}</div>
   <div class="panel" style="margin-top:20px"><h2>All charges explained</h2><ul>
     <li><b>Starter plan:</b> free, no card or payment details needed.</li>
     <li><b>Paid plans:</b> optional. A paid plan starts only after the marketplace team confirms they have received your payment, and it is valid for the period they set.</li>
-    <li><b>Promote your shop (shown first in lists):</b> ${priceOf('promote_price_week') ? html`<b>${inr(priceOf('promote_price_week'))} per week.</b>` : ''} ${setting('featured_price_note')}</li><li><b>Banner advertisements (home and category pages, marked “Ad”):</b> ${priceOf('ad_price_week') ? html`<b>${inr(priceOf('ad_price_week'))} per week.</b>` : ''} ${setting('ad_note')}</li>
+    <li><b>Promote your shop (shown first in lists):</b> ${priceOf('promote_price_day') ? html`<b>${inr(priceOf('promote_price_day'))} per day</b> — you choose how many days.` : ''} ${setting('featured_price_note')}</li><li><b>Banner advertisements (home and category pages, marked “Ad”):</b> ${priceOf('ad_price_day') ? html`<b>${inr(priceOf('ad_price_day'))} per day</b> — you choose how many days.` : ''} ${setting('ad_note')}</li>
     <li><b>Order commission:</b> ${pct > 0 ? html`${pct}% of the item value of each <i>delivered</i> order. Commission is recorded in your account. You pay it from the Commission page (UPI or Razorpay) or directly to the team; it is marked paid only after the team confirms the money.` : 'Currently 0%. If a commission is introduced, it will be shown here and shop owners will be informed before it applies.'}</li>
     <li><b>Payments:</b> Customer orders are paid directly to the shop (cash on delivery or at the shop); the website does not take customers' money. Shops can pay plan fees to the marketplace by UPI or Razorpay when enabled; the team confirms each payment before activating a plan, and records it in your account.</li></ul>
     <a class="btn gold" href="#/register">${t('register_shop')}</a></div></div>`,
@@ -707,6 +707,14 @@ function dashLayout(active, inner, title) {
       ${inner}</div></div></div>`, { title: `${title || 'Dashboard'} | ${siteName()}`, noindex: true });
 }
 
+function usageNotice(plan, prodCount, ordCount) {
+  const out = [];
+  const chk = (n, max, what) => { if (!max) return; if (n >= max) out.push(html`<div class="flash error">🚫 You have used all <b>${max}</b> ${what} on the <b>${plan.name}</b> plan. <a href="#/dashboard/plan">Upgrade your plan →</a></div>`); else if (n >= max * 0.8) out.push(html`<div class="notice">⚠️ ${n} of ${max} ${what} used on the <b>${plan.name}</b> plan. <a href="#/dashboard/plan">Upgrade →</a></div>`); };
+  chk(prodCount, plan.max_products, 'products'); chk(ordCount, plan.max_orders_month, 'orders this month');
+  if (plan.max_orders_month && ordCount >= plan.max_orders_month) out.push(html`<div class="flash error">Customers <b>cannot place new orders</b> in your shop until next month or until you upgrade.</div>`);
+  return out;
+}
+const monthOrders = list => list.filter(o => o.status !== 'cancelled' && dayKey(o.created_at).slice(0, 7) === todayIST().slice(0, 7)).length;
 route('/dashboard', async () => {
   if (!ownerGuard()) return; const sh = S.shop;
   const [orders, pc] = await Promise.all([
@@ -715,8 +723,9 @@ route('/dashboard', async () => {
   const list = must(orders); const counts = {}; list.forEach(o => { counts[o.status] = (counts[o.status] || 0) + 1; });
   const today = list.filter(o => dayKey(o.created_at) === todayIST()).length; const plan = effPlan(sh);
   dashLayout('', html`<h1>${sh.name}</h1>
+  ${usageNotice(plan, pc.count || 0, monthOrders(list))}
   <div class="stats"><div class="stat"><b>${counts.new || 0}</b><span>${t('s_new')} ${t('orders')}</span></div><div class="stat"><b>${today}</b><span>${t('orders')} today</span></div>
-    <div class="stat"><b>${pc.count || 0}</b><span>${t('products')}</span></div><div class="stat"><b>${plan.name}</b><span>${t('subscription')}</span></div></div>
+    <div class="stat"><b>${pc.count || 0}</b><span>${t('products')}</span></div><div class="stat"><b>${monthOrders(list)}${plan.max_orders_month ? ' / ' + plan.max_orders_month : ''}</b><span>Orders this month</span></div><div class="stat"><b>${plan.name}</b><span>${t('subscription')}</span></div></div>
   ${counts.new ? html`<div class="notice"><b>${counts.new}</b> new order(s) waiting. <a href="#/dashboard/orders?status=new">Open them →</a></div>` : ''}
   ${!pc.count ? html`<div class="notice">Add your first product so customers can order. <a class="btn small" href="#/dashboard/product/new">${t('add_product')}</a></div>` : ''}
   <div class="panel"><div class="row between"><h2>${t('orders')}</h2><a href="#/dashboard/orders">${t('view_all')} →</a></div>
@@ -728,7 +737,7 @@ route('/dashboard/products', async () => {
   if (!ownerGuard()) return; const sh = S.shop; const plan = effPlan(sh);
   const rows = must(await sb.from('products').select('*').eq('shop_id', sh.id).order('id', { ascending: false }));
   dashLayout('/products', html`<div class="row between mb"><h1 style="margin:0">${t('products')}</h1><a class="btn gold" href="#/dashboard/product/new">＋ ${t('add_product')}</a></div>
-  <p class="muted small">${rows.length} / ${plan.max_products || '∞'} products (${plan.name})</p>
+  <p class="muted small">${rows.length} / ${plan.max_products || '∞'} products (${plan.name})</p>${usageNotice(plan, rows.length, 0)}
   ${rows.length ? html`<div class="tablewrap"><table class="t"><tr><th></th><th>${t('name')}</th><th>${t('price')}</th><th>Stock</th><th></th></tr>
     ${rows.map(p => html`<tr><td>${imgUrl(p.image) ? html`<img class="thumb-s" src="${imgUrl(p.image)}" alt="" width="44" height="44">` : html`<span class="thumb-s">🛍️</span>`}</td>
       <td><b>${p.name}</b>${p.name_ml ? html`<br><span class="muted small">${p.name_ml}</span>` : ''}${!p.active ? html`<br><span class="tag grey">Hidden</span>` : ''}${p.blocked ? html`<br><span class="tag red">Blocked by admin</span>` : ''}</td>
@@ -833,10 +842,13 @@ route('/dashboard/settings', async () => {
 });
 
 route('/dashboard/plan', async () => {
-  if (!ownerGuard()) return; const sh = S.shop; const cur = effPlan(sh); const pct = parseFloat(setting('commission_pct')) || 0;
+  if (!ownerGuard()) return; const sh = S.shop; const cur = effPlan(sh);
+  const [uo, up] = await Promise.all([sb.from('orders').select('status,created_at').eq('shop_id', sh.id).gte('created_at', new Date(Date.now() - 40 * 864e5).toISOString()).limit(2000), sb.from('products').select('id', { count: 'exact', head: true }).eq('shop_id', sh.id)]);
+  const usage = usageNotice(cur, up.count || 0, monthOrders(must(uo)));
+  const usedO = monthOrders(must(uo)); const pct = parseFloat(setting('commission_pct')) || 0;
   const [reqs, pays] = await Promise.all([sb.from('plan_requests').select('*, plans(name)').eq('shop_id', sh.id).eq('status', 'open'), sb.from('payments').select('*').eq('shop_id', sh.id).order('id', { ascending: false })]);
   const open = must(reqs)[0]; const payments = must(pays);
-  dashLayout('/plan', html`<h1>${t('subscription')}</h1><div class="panel"><p>Current plan: <b>${cur.name}</b>${sh.plan_until && cur.price > 0 ? html` · valid until <b>${sh.plan_until}</b>` : ''}</p>${isFeatured(sh) ? html`<p><span class="tag gold">★ Featured</span> until ${sh.featured_until}</p>` : ''}</div>
+  dashLayout('/plan', html`<h1>${t('subscription')}</h1>${usage}<div class="panel"><p>Current plan: <b>${cur.name}</b> · products ${up.count || 0}/${cur.max_products || '∞'} · orders this month ${usedO}/${cur.max_orders_month || '∞'}</p><p>${sh.plan_until && cur.price > 0 ? html` · valid until <b>${sh.plan_until}</b>` : ''}</p>${isFeatured(sh) ? html`<p><span class="tag gold">★ Featured</span> until ${sh.featured_until}</p>` : ''}</div>
   <div class="shopcards mb">${S.plans.filter(p => p.active).map(p => html`<div class="card" style="padding:16px"><h3>${p.name}</h3><div class="price" style="font-size:1.6rem">${p.price === 0 ? t('free') : html`${inr(p.price)}<span class="muted small"> / month</span>`}</div><p class="small">${p.description}</p>
     ${p.id === cur.id ? html`<span class="tag">✅ Current</span>` : (p.price > 0 ? payBox(p, sh) : '')}</div>`)}</div>
   ${open ? html`<div class="notice">Your request for <b>${open.plans ? open.plans.name : ''}</b> is open. The team will contact you on WhatsApp.</div>` : ''}
@@ -886,30 +898,31 @@ async function claimPay(type, id, method, ref, amount) {
 
 const claimView = r => r.pay_ref ? html`<p class="small">✅ Payment reported: <b>${r.pay_method.toUpperCase()}</b> · ${r.pay_ref}. Waiting for the team to confirm.</p>` : '';
 route('/dashboard/promote', async () => {
-  if (!ownerGuard()) return; const sh = S.shop; const pp = priceOf('promote_price_week'), ap = priceOf('ad_price_week'); const today = todayIST();
+  if (!ownerGuard()) return; const sh = S.shop; const pp = priceOf('promote_price_day'), ap = priceOf('ad_price_day'); const today = todayIST();
   let promos = [], ads = [], prods = [], tablesOk = true;
   try {
     [promos, ads, prods] = await Promise.all([sb.from('promo_requests').select('*').eq('shop_id', sh.id).order('id', { ascending: false }).limit(10), sb.from('ads').select('*').eq('shop_id', sh.id).order('id', { ascending: false }).limit(30), sb.from('products').select('id,name').eq('shop_id', sh.id).eq('active', true).order('name')]).then(r => r.map(must));
   } catch (e) { tablesOk = false; }
-  const weeksOpts = (price, sel) => [1, 2, 4, 8].map(w => html`<option value="${w}">${w} week${w > 1 ? 's' : ''} — ${inr(price * w)}</option>`);
+  const daysBox = (price, id) => html`<label for="${id}">How many days? (1–90)</label><input id="${id}" name="days" type="number" min="1" max="90" value="7" required inputmode="numeric" data-ppd="${price}" data-out="${id}_t" style="max-width:140px"> <b id="${id}_t">${inr(price * 7)}</b> <span class="muted small">(${inr(price)} per day)</span>`;
+  const dayTxt = n => `${n} day${n > 1 ? 's' : ''}`;
   dashLayout('/promote', html`<h1>Promote & Ads</h1>
   <p class="muted">Nothing is charged by the website. You pay the marketplace by UPI or Razorpay, and the team switches it on after they see your money.</p>
   ${!tablesOk ? html`<div class="flash error">Promotions are not set up yet. The administrator must run the latest <code>supabase.sql</code>.</div>` : html`
   <div class="panel"><h2>⭐ Promote my shop</h2><p>Promoted shops are shown <b>first</b> in town and category lists and in “Featured shops” on the home page.</p>
     ${isFeatured(sh) ? html`<p><span class="tag gold">★ Promoted</span> until <b>${sh.featured_until}</b></p>` : ''}
-    ${pp ? html`<form class="row" data-form="promocreate"><select name="weeks" style="max-width:260px">${weeksOpts(pp)}</select><button class="btn gold" type="submit">Continue to payment</button></form>`
+    ${pp ? html`<form data-form="promocreate">${daysBox(pp, 'prd')}<br><button class="btn gold" type="submit">Continue to payment</button></form>`
         : html`<p class="notice">Promotion rates have not been published yet. <a href="#/contact">Ask the team</a>.</p>`}
-    ${promos.filter(r => r.status === 'open').map(r => html`<div class="panel" style="margin-top:12px"><b>${r.weeks} week${r.weeks > 1 ? 's' : ''} promotion — ${inr(r.amount)}</b> <span class="tag gold">waiting</span>
+    ${promos.filter(r => r.status === 'open').map(r => html`<div class="panel" style="margin-top:12px"><b>${dayTxt(r.days || r.weeks * 7)} promotion — ${inr(r.amount)}</b> <span class="tag gold">waiting</span>
       ${r.pay_ref ? claimView(r) : html`${payOptions({ amount: r.amount, note: `${siteName()} promote - ${sh.name}`, type: 'promo', id: r.id }) || html`<p class="small muted">Online payment is not switched on yet. Please contact the team.</p>`}`}</div>`)}
-    ${promos.filter(r => r.status !== 'open').length ? html`<p class="small muted">Earlier: ${promos.filter(r => r.status !== 'open').map(r => `${r.weeks}w ${r.status} (${dOnly(r.created_at)})`).join(' · ')}</p>` : ''}</div>
+    ${promos.filter(r => r.status !== 'open').length ? html`<p class="small muted">Earlier: ${promos.filter(r => r.status !== 'open').map(r => `${r.days || r.weeks * 7}d ${r.status} (${dOnly(r.created_at)})`).join(' · ')}</p>` : ''}</div>
   <div class="panel"><h2>📣 Banner advertisement</h2><p>Your banner appears between the products on the <b>home page</b> and category pages, marked “${adLabel()}”. The team checks every banner before it goes live.</p>
     ${ap ? html`<form data-form="adcreate" novalidate>${field('Headline (3–80 letters)', 'title', '', 'type="text" required maxlength="80"')}${field('Short text (optional)', 'body', '', 'type="text" maxlength="160"')}
       <label for="f_product_id">Open this when tapped</label><select id="f_product_id" name="product_id"><option value="">My shop page</option>${prods.map(p => html`<option value="${p.id}">${p.name}</option>`)}</select>
       <label for="f_adimage">Banner picture (optional, landscape looks best)</label><img id="preview_ad" alt="" width="200" height="100" style="display:none;border-radius:12px;margin-bottom:8px;object-fit:cover"><input id="f_adimage" type="file" name="image" accept="image/jpeg,image/png,image/webp" data-preview="preview_ad">
-      <label for="f_adweeks">How long</label><select id="f_adweeks" name="weeks">${weeksOpts(ap)}</select>
+      ${daysBox(ap, 'add')}
       <button class="btn gold" style="margin-top:14px" type="submit">Continue to payment</button></form>` : html`<p class="notice">Advertising rates have not been published yet. <a href="#/contact">Ask the team</a>.</p>`}</div>
   ${ads.length ? html`<h2>Your ads</h2>${ads.map(a => html`<div class="panel"><div class="row between"><b>${a.title}</b><span class="tag ${a.status === 'approved' ? '' : a.status === 'rejected' ? 'red' : 'gold'}">${a.status}</span></div>
-    <p class="small muted">${a.weeks} week${a.weeks > 1 ? 's' : ''} · ${inr(a.amount)}${a.status === 'approved' ? ` · runs ${a.starts_on} to ${a.ends_on}${a.ends_on < today ? ' (ended)' : ''}` : ''}</p>
+    <p class="small muted">${dayTxt(a.days || a.weeks * 7)} · ${inr(a.amount)}${a.status === 'approved' ? ` · runs ${a.starts_on} to ${a.ends_on}${a.ends_on < today ? ' (ended)' : ''}` : ''}</p>
     ${imgUrl(a.image) ? html`<img src="${imgUrl(a.image)}" alt="" width="200" height="100" style="border-radius:12px;object-fit:cover">` : ''}${a.admin_note ? html`<p class="notice"><b>Team note:</b> ${a.admin_note}</p>` : ''}
     ${a.status === 'pending' ? (a.pay_ref ? claimView(a) : payOptions({ amount: a.amount, note: `${siteName()} ad - ${sh.name}`, type: 'ad', id: a.id }) || html`<p class="small muted">Online payment is not switched on yet. Please contact the team.</p>`) : ''}
     ${a.status === 'pending' ? html`<button class="btn danger small" style="margin-top:8px" type="button" data-act="delad" data-id="${a.id}">Delete this ad</button>` : ''}</div>`)}` : ''}`}`, 'Promote');
@@ -1058,8 +1071,8 @@ route('/admin/plans', async () => {
   adminLayout('/plans', html`<h1>Subscription plans</h1>
   ${reqs.length ? html`<div class="panel"><h2>Upgrade requests</h2><div class="tablewrap"><table class="t"><tr><th>Shop</th><th>Plan</th><th>Payment claimed</th><th>Requested</th><th></th></tr>${reqs.map(r => html`<tr><td><a href="#/admin/shop/${r.shop_id}">${one(r.shops).name}</a></td><td>${one(r.plans).name} (${inr(one(r.plans).price)})</td><td>${r.pay_method ? html`<b>${r.pay_method.toUpperCase()}</b> ${inr(r.amount)}<br><span class="small">${r.pay_ref}</span>` : html`<span class="muted">not paid yet</span>`}</td><td>${dOnly(r.created_at)}</td><td><button class="btn ghost small" type="button" data-act="dismissreq" data-id="${r.id}">Dismiss</button></td></tr>`)}</table></div>
     <p class="hint">Check the claimed payment in your bank or Razorpay dashboard, record it on the shop page, then set the plan and its end date.</p></div>` : ''}
-  <div class="panel"><h2>Add a plan</h2><form class="row" data-form="planadd"><input name="name" placeholder="Name" required maxlength="40" style="max-width:180px"><input name="price" type="number" placeholder="₹ / month" min="0" required style="max-width:130px"><input name="max_products" type="number" placeholder="Max products (0=unlimited)" min="0" style="max-width:220px"><input name="description" placeholder="Description shown to shops" maxlength="300" style="max-width:300px"><button class="btn" type="submit">Add</button></form></div>
-  ${S.plans.map(p => html`<form class="panel" data-form="plansave" data-id="${p.id}"><div class="grid2"><div>${field('Name', 'name', p.name, 'maxlength="40"')}</div><div>${field('Price (₹ per month)', 'price', p.price, 'type="number" min="0"')}</div><div>${field('Max products (0 = unlimited)', 'max_products', p.max_products, 'type="number" min="0"')}</div><div>${field('Order', 'sort', p.sort, 'type="number"')}</div></div>
+  <div class="panel"><h2>Add a plan</h2><form class="row" data-form="planadd"><input name="name" placeholder="Name" required maxlength="40" style="max-width:180px"><input name="price" type="number" placeholder="₹ / month" min="0" required style="max-width:130px"><input name="max_products" type="number" placeholder="Max products (0=unlimited)" min="0" style="max-width:220px"><input name="max_orders_month" type="number" placeholder="Max orders / month (0=unlimited)" min="0" style="max-width:250px"><input name="description" placeholder="Description shown to shops" maxlength="300" style="max-width:300px"><button class="btn" type="submit">Add</button></form></div>
+  ${S.plans.map(p => html`<form class="panel" data-form="plansave" data-id="${p.id}"><div class="grid2"><div>${field('Name', 'name', p.name, 'maxlength="40"')}</div><div>${field('Price (₹ per month)', 'price', p.price, 'type="number" min="0"')}</div><div>${field('Max products (0 = unlimited)', 'max_products', p.max_products, 'type="number" min="0"')}</div><div>${field('Max orders per month (0 = unlimited)', 'max_orders_month', p.max_orders_month, 'type="number" min="0"')}</div><div>${field('Order', 'sort', p.sort, 'type="number"')}</div></div>
     ${field('Description', 'description', p.description, 'maxlength="300"')}${checkbox('Offered to shops', 'active', p.active)}<button class="btn small" type="submit">Save</button></form>`)}`, 'Plans');
 });
 
@@ -1070,16 +1083,16 @@ route('/admin/promotions', async () => {
   const warn = html`<p class="hint"><u>Check the payment in your bank / Razorpay dashboard first.</u> A reference typed by a shop is only a claim.</p>`;
   adminLayout('/promotions', html`<h1>Ads & promotions</h1>
   <h2>Promotion requests (featured shops)</h2>
-  ${P.filter(r => r.status === 'open').length ? P.filter(r => r.status === 'open').map(r => { const base = r.shops.featured_until && r.shops.featured_until > today ? r.shops.featured_until : today; return html`<form class="panel" data-form="promoact" data-id="${r.id}" data-shop="${r.shop_id}" data-weeks="${r.weeks}" data-base="${base}" data-amount="${r.amount}" data-ref="${r.pay_ref}">
-    <b><a href="#/admin/shop/${r.shop_id}">${r.shops.name}</a></b> — ${r.weeks} week${r.weeks > 1 ? 's' : ''}, ${inr(r.amount)} · ${dOnly(r.created_at)}<br>${claim(r)}${warn}
-    <p class="small">If activated, the shop is promoted until <b>${addDays(base, r.weeks * 7)}</b>.</p>${r.pay_ref ? checkbox('Also record ' + inr(r.amount) + ' in Payments', 'rec', true) : ''}
+  ${P.filter(r => r.status === 'open').length ? P.filter(r => r.status === 'open').map(r => { const base = r.shops.featured_until && r.shops.featured_until > today ? r.shops.featured_until : today; return html`<form class="panel" data-form="promoact" data-id="${r.id}" data-shop="${r.shop_id}" data-days="${r.days || r.weeks * 7}" data-base="${base}" data-amount="${r.amount}" data-ref="${r.pay_ref}">
+    <b><a href="#/admin/shop/${r.shop_id}">${r.shops.name}</a></b> — ${r.days || r.weeks * 7} day(s), ${inr(r.amount)} · ${dOnly(r.created_at)}<br>${claim(r)}${warn}
+    <p class="small">If activated, the shop is promoted until <b>${addDays(base, r.days || r.weeks * 7)}</b>.</p>${r.pay_ref ? checkbox('Also record ' + inr(r.amount) + ' in Payments', 'rec', true) : ''}
     <div class="row"><button class="btn small" type="submit" name="action" value="activate">✅ Activate</button><button class="btn danger small" type="submit" name="action" value="dismiss">Dismiss</button></div></form>`; }) : emptyBox('No open promotion requests.')}
   <h2 style="margin-top:24px">Banner ads</h2>
   ${A.length ? A.map(a => html`<form class="panel" data-form="adreview" data-id="${a.id}" data-shop="${a.shop_id}" data-amount="${a.amount}" data-ref="${a.pay_ref}" data-status="${a.status}">
     <div class="row between"><b>${a.title}</b><span class="tag ${a.status === 'approved' ? '' : a.status === 'pending' ? 'gold' : 'red'}">${a.status}</span></div>
-    <p class="small muted"><a href="#/admin/shop/${a.shop_id}">${one(a.shops).name}</a> · ${a.weeks} week${a.weeks > 1 ? 's' : ''} · ${inr(a.amount)} · ${dOnly(a.created_at)}<br>${a.body}</p>
+    <p class="small muted"><a href="#/admin/shop/${a.shop_id}">${one(a.shops).name}</a> · ${a.days || a.weeks * 7} day(s) · ${inr(a.amount)} · ${dOnly(a.created_at)}<br>${a.body}</p>
     ${imgUrl(a.image) ? html`<img src="${imgUrl(a.image)}" alt="" width="240" height="120" style="border-radius:12px;object-fit:cover">` : ''}<p>${claim(a)}</p>${a.status === 'pending' ? warn : ''}
-    <div class="grid2"><div><label>Starts</label><input type="date" name="starts_on" value="${a.starts_on || today}"></div><div><label>Ends</label><input type="date" name="ends_on" value="${a.ends_on || addDays(today, a.weeks * 7)}"></div></div>
+    <div class="grid2"><div><label>Starts</label><input type="date" name="starts_on" value="${a.starts_on || today}"></div><div><label>Ends</label><input type="date" name="ends_on" value="${a.ends_on || addDays(today, a.days || a.weeks * 7)}"></div></div>
     <label>Note to the shop (shown if rejected)</label><input name="admin_note" value="${a.admin_note}" maxlength="300">
     ${a.status === 'pending' && a.pay_ref ? checkbox('When approving, also record ' + inr(a.amount) + ' in Payments', 'rec', true) : ''}
     <div class="row" style="margin-top:10px">${a.status !== 'approved' ? html`<button class="btn small" type="submit" name="action" value="approved">✅ Approve</button>` : html`<button class="btn small" type="submit" name="action" value="approved">Save dates</button>`}
@@ -1127,7 +1140,7 @@ route('/admin/settings', async () => {
   ${field('Order commission (% of item value on delivered orders, 0 = none)', 'commission_pct', setting('commission_pct'), 'type="number" min="0" max="30" step="0.1"')}<p class="hint">Applies only to new orders. Shown to shop owners on the Plans & charges page. Commission is recorded, not collected by the website.</p>
   <h2 style="margin-top:22px">Receive payments from shops</h2>
   <div class="grid2"><div>${field('Your UPI ID (e.g. name@bank)', 'upi_id', setting('upi_id'), 'maxlength="60" autocomplete="off"')}</div><div>${field('Name shown in the UPI app', 'upi_name', setting('upi_name'), 'maxlength="40"')}</div>
-    <div>${field('Promote shop: price per week (₹)', 'promote_price_week', setting('promote_price_week'), 'type="number" min="0" inputmode="numeric"')}</div><div>${field('Banner ad: price per week (₹)', 'ad_price_week', setting('ad_price_week'), 'type="number" min="0" inputmode="numeric"')}</div>
+    <div>${field('Promote shop: price per day (₹)', 'promote_price_day', setting('promote_price_day'), 'type="number" min="0" inputmode="numeric"')}</div><div>${field('Banner ad: price per day (₹)', 'ad_price_day', setting('ad_price_day'), 'type="number" min="0" inputmode="numeric"')}</div>
     <div>${field('Razorpay Key ID (starts with rzp_)', 'razorpay_key_id', setting('razorpay_key_id'), 'maxlength="60" autocomplete="off" placeholder="rzp_live_..."')}</div></div>
   <p class="hint">Shops then see “Pay by UPI” and “Pay with Razorpay” on their Subscription page. Paste only the Razorpay <b>Key ID</b>, never the Key Secret. Plans are activated by you after you see the money in your bank / Razorpay dashboard; the website does not verify payments automatically. Leave a box empty to hide that option.</p>
   <h2 style="margin-top:22px">Business & contact details (shown on policy and contact pages)</h2>${field('Operator / business name', 'operator_name', setting('operator_name'), 'maxlength="120"')}
@@ -1210,6 +1223,7 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el || !actions[el.dataset.act]) return; e.preventDefault();
   Promise.resolve().then(() => actions[el.dataset.act](el, e)).catch(err => toast(err.message, 'error'));
 });
+document.addEventListener('input', e => { const i = e.target; if (i.dataset && i.dataset.ppd) { const o = document.getElementById(i.dataset.out); const d = Math.max(0, Math.min(90, parseInt(i.value, 10) || 0)); if (o) o.textContent = inr(d * Number(i.dataset.ppd)); } });
 document.addEventListener('change', e => {
   const inp = e.target; if (inp.type === 'file' && inp.dataset.preview && inp.files[0]) { const img = document.getElementById(inp.dataset.preview); if (img) { img.src = URL.createObjectURL(inp.files[0]); img.style.display = 'block'; } }
 });
@@ -1264,14 +1278,14 @@ const forms = {
     const ok = must(await sb.rpc('claim_order_payment', { p_code: f.dataset.code, p_ref: ref })); toast(ok ? 'Thank you. The shop will check and confirm your payment.' : 'This order cannot take a payment reference.', ok ? 'ok' : 'error'); router(true);
   },
   async promocreate(f, fd) {
-    const w = toInt(fd.get('weeks'), 1, 12), pp = priceOf('promote_price_week'); if (!w || !pp) throw new Error('Promotion is not available right now.');
-    must(await sb.from('promo_requests').insert({ shop_id: S.shop.id, weeks: w, amount: pp * w })); toast('Request created. Now pay using one of the options below.'); router(true);
+    const w = toInt(fd.get('days'), 1, 90), pp = priceOf('promote_price_day'); if (!w || !pp) throw new Error('Promotion is not available right now.');
+    must(await sb.from('promo_requests').insert({ shop_id: S.shop.id, days: w, amount: pp * w })); toast('Request created. Now pay using one of the options below.'); router(true);
   },
   async adcreate(f, fd) {
-    const w = toInt(fd.get('weeks'), 1, 12), ap = priceOf('ad_price_week'), title = clean(fd.get('title'), 80); if (!w || !ap) throw new Error('Advertising is not available right now.');
+    const w = toInt(fd.get('days'), 1, 90), ap = priceOf('ad_price_day'), title = clean(fd.get('title'), 80); if (!w || !ap) throw new Error('Advertising is not available right now.');
     if (title.length < 3) throw new Error('Please write a headline (at least 3 letters).');
     const file = fd.get('image'); const img = file && file.size ? await uploadImage(file, 1200) : null;
-    try { must(await sb.from('ads').insert({ shop_id: S.shop.id, title, body: clean(fd.get('body'), 160), image: img, product_id: toInt(fd.get('product_id'), 1), weeks: w, amount: ap * w })); }
+    try { must(await sb.from('ads').insert({ shop_id: S.shop.id, title, body: clean(fd.get('body'), 160), image: img, product_id: toInt(fd.get('product_id'), 1), days: w, amount: ap * w })); }
     catch (e) { if (img) removeImage(img); throw e; }
     toast('Ad saved. Now pay using one of the options below. It goes live after the team checks it.'); router(true);
   },
@@ -1376,9 +1390,9 @@ const forms = {
   async promoact(f, fd, ev) {
     const action = ev && ev.submitter ? ev.submitter.value : ''; const d = f.dataset;
     if (action === 'dismiss') { must(await sb.from('promo_requests').update({ status: 'dismissed' }).eq('id', d.id)); toast('Dismissed.'); return router(true); }
-    if (action !== 'activate') return; const until = addDays(d.base, Number(d.weeks) * 7);
+    if (action !== 'activate') return; const until = addDays(d.base, Number(d.days));
     must(await sb.from('shops').update({ featured_until: until }).eq('id', d.shop)); must(await sb.from('promo_requests').update({ status: 'done' }).eq('id', d.id));
-    if (fd.get('rec')) must(await sb.from('payments').insert({ shop_id: Number(d.shop), kind: 'featured', amount: Number(d.amount), reference: d.ref, note: 'Promotion ' + d.weeks + ' week(s)' }));
+    if (fd.get('rec')) must(await sb.from('payments').insert({ shop_id: Number(d.shop), kind: 'featured', amount: Number(d.amount), reference: d.ref, note: 'Promotion ' + d.days + ' day(s)' }));
     toast('Shop promoted until ' + until + '.'); router(true);
   },
   async adreview(f, fd, ev) {
@@ -1394,12 +1408,12 @@ const forms = {
   },
   async catsave(f, fd) { must(await sb.from('categories').update({ name_en: clean(fd.get('name_en'), 40), name_ml: clean(fd.get('name_ml'), 40), icon: clean(fd.get('icon'), 4) || '🛍️', sort: toInt(fd.get('sort'), 0, 999) ?? 100, active: !!fd.get('active') }).eq('id', f.dataset.id)); await loadBase(); toast('Category saved.'); router(true); },
   async planadd(f, fd) {
-    const price = toInt(fd.get('price'), 0, 100000), mx = toInt(fd.get('max_products') || 0, 0, 100000), name = clean(fd.get('name'), 40); if (name.length < 2 || price === null || mx === null) throw new Error('Enter a name, a price in rupees and the product limit (0 = unlimited).');
-    must(await sb.from('plans').insert({ name, price, max_products: mx, description: clean(fd.get('description'), 300) })); await loadBase(); toast('Plan added.'); router(true);
+    const price = toInt(fd.get('price'), 0, 100000), mx = toInt(fd.get('max_products') || 0, 0, 100000), mo = toInt(fd.get('max_orders_month') || 0, 0, 1000000), name = clean(fd.get('name'), 40); if (name.length < 2 || price === null || mx === null || mo === null) throw new Error('Enter a name, a price in rupees and the limits (0 = unlimited).');
+    must(await sb.from('plans').insert({ name, price, max_products: mx, max_orders_month: mo, description: clean(fd.get('description'), 300) })); await loadBase(); toast('Plan added.'); router(true);
   },
   async plansave(f, fd) {
-    const price = toInt(fd.get('price'), 0, 100000), mx = toInt(fd.get('max_products') || 0, 0, 100000), name = clean(fd.get('name'), 40); if (name.length < 2 || price === null || mx === null) throw new Error('Enter a name, a price in rupees and the product limit (0 = unlimited).');
-    must(await sb.from('plans').update({ name, price, max_products: mx, description: clean(fd.get('description'), 300), sort: toInt(fd.get('sort'), 0, 999) ?? 100, active: !!fd.get('active') }).eq('id', f.dataset.id)); await loadBase(); toast('Plan saved.'); router(true);
+    const price = toInt(fd.get('price'), 0, 100000), mx = toInt(fd.get('max_products') || 0, 0, 100000), mo = toInt(fd.get('max_orders_month') || 0, 0, 1000000), name = clean(fd.get('name'), 40); if (name.length < 2 || price === null || mx === null || mo === null) throw new Error('Enter a name, a price in rupees and the limits (0 = unlimited).');
+    must(await sb.from('plans').update({ name, price, max_products: mx, max_orders_month: mo, description: clean(fd.get('description'), 300), sort: toInt(fd.get('sort'), 0, 999) ?? 100, active: !!fd.get('active') }).eq('id', f.dataset.id)); await loadBase(); toast('Plan saved.'); router(true);
   },
   async ticketsave(f, fd) { must(await sb.from('tickets').update({ status: fd.get('status'), admin_note: cleanML(fd.get('admin_note'), 500) }).eq('id', f.dataset.id)); toast('Ticket updated.'); },
   async adminsettings(f, fd) {
@@ -1407,7 +1421,7 @@ const forms = {
     const upi = clean(fd.get('upi_id'), 60), rzk = clean(fd.get('razorpay_key_id'), 60);
     if (upi && !/^[\w.\-]{2,}@[A-Za-z]{2,}$/.test(upi)) throw new Error('UPI ID looks wrong. It should look like name@bank.'); if (rzk && !/^rzp_(test|live)_[A-Za-z0-9]+$/.test(rzk)) throw new Error('Razorpay Key ID should start with rzp_live_ or rzp_test_. Never paste the Key Secret.');
     const wa = String(fd.get('contact_whatsapp') || '').trim(); const rows = [['site_name', clean(fd.get('site_name'), 40) || 'Nammude Kada'], ['commission_pct', String(pct)], ['contact_email', clean(fd.get('contact_email'), 120)], ['contact_phone', clean(fd.get('contact_phone'), 20)], ['contact_whatsapp', wa ? (normPhone(wa) || '') : ''],
-      ['promote_price_week', String(toInt(fd.get('promote_price_week') || 0, 0, 100000) || '')], ['ad_price_week', String(toInt(fd.get('ad_price_week') || 0, 0, 100000) || '')], ['upi_id', upi], ['upi_name', clean(fd.get('upi_name'), 40)], ['razorpay_key_id', rzk], ['contact_address', cleanML(fd.get('contact_address'), 300)], ['operator_name', clean(fd.get('operator_name'), 120)], ['featured_price_note', cleanML(fd.get('featured_price_note'), 400)], ['ad_note', cleanML(fd.get('ad_note'), 400)]];
+      ['promote_price_day', String(toInt(fd.get('promote_price_day') || 0, 0, 100000) || '')], ['ad_price_day', String(toInt(fd.get('ad_price_day') || 0, 0, 100000) || '')], ['upi_id', upi], ['upi_name', clean(fd.get('upi_name'), 40)], ['razorpay_key_id', rzk], ['contact_address', cleanML(fd.get('contact_address'), 300)], ['operator_name', clean(fd.get('operator_name'), 120)], ['featured_price_note', cleanML(fd.get('featured_price_note'), 400)], ['ad_note', cleanML(fd.get('ad_note'), 400)]];
     must(await sb.from('settings').upsert(rows.map(([key, value]) => ({ key, value })), { onConflict: 'key' })); await loadBase(); renderChrome(); toast('Settings saved.');
   },
 };
