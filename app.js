@@ -64,7 +64,9 @@ const isStandalone = () => { try { return window.matchMedia('(display-mode: stan
 S.app = !window.NK_ADMIN_ONLY && (ls.get('nk_app', null) === null ? isStandalone() : !!ls.get('nk_app', false));
 const t = k => (I18N[k] && (I18N[k][S.lang] || I18N[k].en)) || k;
 const setting = k => S.settings[k] || '';
-const siteName = () => setting('site_name') || 'Nammude Kada';
+const SITE_NAMES = { en: 'Nammude Kada', ml: 'നമ്മുടെ കട', hi: 'हमारी दुकान', ta: 'நம் கடை', te: 'మన దుకాణం', kn: 'ನಮ್ಮ ಅಂಗಡಿ', bn: 'আমাদের দোকান', mr: 'आपले दुकान', gu: 'આપણી દુકાન', pa: 'ਸਾਡੀ ਦੁਕਾਨ' };
+// If the admin has not chosen a custom name (still the default), show the name in the visitor's language.
+const siteName = () => { const s = setting('site_name'); return (!s || s === SITE_NAMES.en || s === SITE_NAMES.ml) ? (SITE_NAMES[S.lang] || SITE_NAMES.en) : s; };
 const cname = c => !c ? '' : (S.lang === 'ml' && c.name_ml ? c.name_ml : c.name_en);
 const pname = p => (S.lang === 'ml' && p.name_ml ? p.name_ml : p.name);
 const catById = id => S.cats.find(c => c.id === id);
