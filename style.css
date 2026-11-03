@@ -199,3 +199,6 @@ body.appmode .tabbar{display:flex;position:fixed;bottom:0;left:50%;transform:tra
 body.appmode .cards{grid-template-columns:repeat(2,1fr)}
 body.appmode .shopcards{grid-template-columns:1fr}
 body.appmode #toast{bottom:84px;z-index:70}
+
+.langsel{font:inherit;font-size:.9rem;padding:6px 10px;border-radius:99px;border:1px solid rgba(255,255,255,.55);background:transparent;color:#fff;max-width:130px}
+.langsel option{color:#1c2420;background:#fff}
