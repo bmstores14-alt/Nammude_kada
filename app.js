@@ -6,7 +6,6 @@
 'use strict';
 
 const CONFIG = {
-  
 SUPABASE_URL: 'https://mxwcnkopzlktfgyyhych.supabase.co',
   SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im14d2Nua29wemxrdGZneXloeWNoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY1MzU3ODgsImV4cCI6MjEwMjExMTc4OH0.jEm_GRhCNcmeVRphRy5XdzCopGhP79CzxrR-9hOQROw',
 };
@@ -158,7 +157,7 @@ function renderChrome() {
   const n = cartCount();
   document.body.classList.toggle('appmode', S.app);
   const installBtn = isStandalone() ? '' : html`<button class="linkbtn modebtn" data-act="install" type="button">⬇ ${S.lang === 'ml' ? 'ഇൻസ്റ്റാൾ' : 'Install'}</button>`;
-  const toggleBtn = html`${S.app ? installBtn : ''}<button class="linkbtn modebtn" data-act="appmode" type="button">${S.app ? '🌐 ' + (S.lang === 'ml' ? 'വെബ്സൈറ്റ്' : 'Website') : '📱 ' + (S.lang === 'ml' ? 'ആപ്പ് മോഡ്' : 'App mode')}</button>`;
+  const toggleBtn = html`${installBtn}<button class="linkbtn modebtn" data-act="appmode" type="button">${S.app ? '🌐 ' + (S.lang === 'ml' ? 'വെബ്സൈറ്റ്' : 'Website') : '📱 ' + (S.lang === 'ml' ? 'ആപ്പ് മോഡ്' : 'App mode')}</button>`;
   const langBox = langSelect();
   const hashNow = location.hash || '#/'; const pth = hashNow.slice(1).split('?')[0];
   const tab = /^\/(shops|category|s\/)/.test(pth) ? 'shops' : /^\/search/.test(pth) ? 'search' : /^\/(cart|checkout)/.test(pth) ? 'cart' : /^\/(login|register|dashboard|reset)/.test(pth) ? 'acct' : (pth === '/' ? 'home' : '');
@@ -1474,6 +1473,7 @@ window.addEventListener('hashchange', () => router(false));
 /* Installable app (PWA): manifest and icons are generated here so the site stays 3 files. */
 function setupManifest() {
   try {
+    if (document.querySelector('link[rel=manifest]')) { if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {}); return; } // real manifest file present (best for install)
     const icon = size => { const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d'); g.fillStyle = '#0f6b3e'; g.fillRect(0, 0, size, size); g.strokeStyle = '#e8a317'; g.lineWidth = size / 28; g.strokeRect(size * 0.1, size * 0.1, size * 0.8, size * 0.8);
       g.fillStyle = '#fffaf0'; g.font = `bold ${size * 0.4}px sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('NK', size / 2, size / 2 + size * 0.02); return c.toDataURL('image/png'); };
     const i192 = icon(192), i512 = icon(512); const base = location.origin + location.pathname;
