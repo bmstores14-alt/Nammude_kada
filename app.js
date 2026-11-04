@@ -426,7 +426,7 @@ route('/p/(\\d+)', async ([id]) => {
   view(html`<div class="wrap">
     <p class="small muted" style="margin-top:14px"><a href="#/">${t('home')}</a> › <a href="#/s/${enc(shop.slug)}">${shop.name}</a> › ${pname(p)}</p>
     <div class="pdp">
-      <div><div class="bigimg">${img ? html`<img id="mainimg" src="${img}" alt="${pname(p)}" width="700" height="700">` : html`<span aria-hidden="true">${cat.icon || '🛍️'}</span>`}</div>
+      <div><div class="bigimg">${img ? html`<img id="mainimg" src="${img}" alt="${pname(p)}" width="700" height="700" data-act="zoom" style="cursor:zoom-in">` : html`<span aria-hidden="true">${cat.icon || '🛍️'}</span>`}</div>
         ${pimgs(p).length > 1 ? html`<div class="thumbs">${pimgs(p).map((u, i) => html`<button class="thumbbtn" type="button" data-act="gal" data-src="${u}" aria-label="Photo ${i + 1}"><img src="${u}" alt="" width="64" height="64" loading="lazy"></button>`)}</div>` : ''}</div>
       <div><h1>${pname(p)}</h1>${p.name_ml && S.lang === 'en' ? html`<p class="muted">${p.name_ml}</p>` : (p.name_ml ? html`<p class="muted">${p.name}</p>` : '')}
         <div class="price" style="font-size:1.8rem">${inr(effPrice(p))}${disc ? html`<s>${inr(p.price)}</s> <span class="tag red">${100 - Math.floor(p.discount_price * 100 / p.price)}% OFF</span>` : ''}</div>
@@ -1220,6 +1220,24 @@ const actions = {
     must(await sb.from('ads').delete().eq('id', el.dataset.id).eq('shop_id', S.shop.id)); if (a) removeImage(a.image); router(true);
   },
   gal(el) { const m = document.getElementById('mainimg'); if (m) m.src = el.dataset.src; },
+  zoom() {
+    const m = document.getElementById('mainimg'); if (!m) return;
+    const list = [...new Set([...document.querySelectorAll('.thumbbtn')].map(b => b.dataset.src))]; if (!list.length) list.push(m.src);
+    let i = Math.max(0, list.indexOf(m.getAttribute('src')));
+    const box = document.createElement('div'); box.className = 'lightbox'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true');
+    box.innerHTML = '<button type="button" class="lb-x" aria-label="Close">✕</button>' + (list.length > 1 ? '<button type="button" class="lb-n lb-prev" aria-label="Previous">‹</button><button type="button" class="lb-n lb-next" aria-label="Next">›</button>' : '') + '<img alt=""><div class="lb-c"></div>';
+    const im = box.querySelector('img'), c = box.querySelector('.lb-c');
+    const show = () => { im.src = list[i]; c.textContent = list.length > 1 ? (i + 1) + ' / ' + list.length : ''; };
+    const close = () => { box.remove(); document.removeEventListener('keydown', key); document.body.style.overflow = ''; };
+    const step = d => { i = (i + d + list.length) % list.length; show(); };
+    const key = e => { if (e.key === 'Escape') close(); else if (e.key === 'ArrowLeft') step(-1); else if (e.key === 'ArrowRight') step(1); };
+    box.addEventListener('click', e => {
+      if (e.target.closest('.lb-prev')) step(-1); else if (e.target.closest('.lb-next')) step(1); else if (e.target !== im) close();
+    });
+    let x0 = null; box.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+    box.addEventListener('touchend', e => { if (x0 === null || list.length < 2) return; const d = e.changedTouches[0].clientX - x0; if (Math.abs(d) > 50) step(d < 0 ? 1 : -1); x0 = null; });
+    document.addEventListener('keydown', key); document.body.style.overflow = 'hidden'; document.body.appendChild(box); show();
+  },
   async adremove(el) {
     if (!confirm('Delete this ad permanently?')) return; const a = must(await sb.from('ads').select('image').eq('id', el.dataset.id).maybeSingle());
     must(await sb.from('ads').delete().eq('id', el.dataset.id)); if (a) removeImage(a.image); router(true);
