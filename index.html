@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta id="vp" name="viewport" content="width=device-width,initial-scale=1">
 <script>
+/* Shop link: https://site/?s=shop-slug  ->  opens that shop's page */
+try{var sp=new URLSearchParams(location.search).get('s');if(sp&&!/[\/\s<>"']/.test(sp)&&!location.hash)history.replaceState(null,'',location.pathname+'#/s/'+encodeURIComponent(sp));}catch(e){}
+</script>
+<script>
 /* Website mode on phones is laid out like the desktop site (compact); App mode uses the normal phone layout. */
 try{var a=localStorage.getItem('nk_app');var app=a===null?(window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true):JSON.parse(a);
 if(!app&&Math.min(screen.width,screen.height)<700)document.getElementById('vp').setAttribute('content','width=1000');}catch(e){}
@@ -17,7 +21,7 @@ if(!app&&Math.min(screen.width,screen.height)<700)document.getElementById('vp').
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Noto+Sans+Malayalam:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 <a class="skip" href="#app">Skip to content</a>
@@ -32,6 +36,6 @@ if(!app&&Math.min(screen.width,screen.height)<700)document.getElementById('vp').
 
 <!-- Supabase client library (pinned version). Your project keys go at the top of app.js -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
-<script src="app.js?v=4"></script>
+<script src="app.js?v=7"></script>
 </body>
 </html>
